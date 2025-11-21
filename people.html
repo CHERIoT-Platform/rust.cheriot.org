@@ -1,0 +1,21 @@
+---
+layout: default
+title: People
+---
+
+{% for person in site.people %}
+<div class="biography">
+	<div class="photo">
+		{% if person.photo %}
+		<img src="/images/{{person.photo}}" >
+		{% else %}
+		<span style="font-size: 7rem">?</span>
+		{% endif %}
+	</div>
+	<div class="bio-text">
+		<h2>{{ person.name }}</h2>
+		<p>{{ person.content | markdownify }}</p>
+	</div>
+</div>
+{% endfor %}
+

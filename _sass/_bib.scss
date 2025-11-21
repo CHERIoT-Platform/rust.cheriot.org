@@ -1,0 +1,71 @@
+label.biblink {
+  color: #003c79;
+}
+label.biblink:hover {
+  text-decoration: underline;
+}
+details summary {
+  cursor: pointer;
+}
+details.bibtex {
+    display:inline-block
+}
+details.abstract {
+    display:inline-block
+}
+details.bibtex[open] {
+    display:block
+}
+details.abstract[open] {
+    display:block
+}
+details > summary {
+  cursor: pointer;
+  color: #003c79;
+}
+details > summary:hover {
+  text-decoration: underline;
+}
+pre.bibtex, p.abstract {
+    background-color: #eef;
+    margin: 0 10px 0 10px;
+    padding: 10px;
+}
+
+.biography
+{
+	display: flex;
+	padding: 8px 0;
+}
+
+div.photo
+{
+	padding: auto;
+	min-width: 180px;
+	height: 150px;
+	display: block;
+	text-align: center;
+	vertical-align: middle;
+}
+
+div.photo > img
+{
+	height: 150px;
+	padding-left: auto;
+	padding-right: auto;
+	margin-right: auto;
+	margin-left: auto;
+	border-radius: 8px;
+}
+
+.bio-text
+{
+	margin-left: 16px;
+	flex: auto;
+	display: block;
+}
+
+.bio-text > h2
+{
+	margin-top: 0;
+}
