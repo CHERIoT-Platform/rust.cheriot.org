@@ -26,7 +26,7 @@ CHERIoT provides a rich compartmentalisation model and object-granularity memory
 The combination will mean that you can use CHERIoT compartments for supply-chain safety in Rust and to allow Rust code to interoperate with existing C/C++ with dynamic guarantees that the C/C++ cannot violate any of the invariants that the Rust code depends on.
 
 This code is being developed in the [CHERIoT-Platform fork of Rust](https://github.com/CHERIoT-Platform/cheri-rust).
-It uses [CHERIoT LLVM](https://github.com/CHERIoT-Platform/llvm-project), which also includes a set of CHERI and CHERIoT-specific [clang static analyser](https://clang-analyzer.llvm.org) analyses that will evolve in tandem with this to make it easier to check C/C++ code needs to interoperate with Rust in a CHERIoT firmware image.
+It uses [CHERIoT LLVM](https://github.com/CHERIoT-Platform/llvm-project), which also includes a set of CHERI and CHERIoT-specific [clang static analyser](https://clang-analyzer.llvm.org) analyses that will evolve in tandem with this to make it easier to check C/C++ code which needs to interoperate with Rust in a CHERIoT firmware image.
 
 ## Where to ask questions
 
