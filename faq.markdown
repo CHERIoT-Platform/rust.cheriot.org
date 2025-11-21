@@ -11,7 +11,7 @@ Here are a few questions that people often ask.
 
 No.
 Rust provides a strong set of properties that are either enforced at compile time or lowered to dynamic checks during compilation.
-These properties go beyond the guarantees that CHERI systems.
+These properties go beyond the guarantees that CHERI systems enforce.
 For example, CHERI can prevent you from confusing pointers and integers, but does not prevent you from confusing two pointers to structures of different types that are the same size, whereas Rust does.
 Rust's `Send` / `Sync` mechanism makes it possible to enforce mutable-XOR-execute policies for safe concurrency, which goes beyond anything enforced at the hardware level in any CHERI system.
 
