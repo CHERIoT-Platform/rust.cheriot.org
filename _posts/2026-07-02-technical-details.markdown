@@ -6,14 +6,18 @@ date: 2026-07-06
 ---
 
 One of the more interesting places where the quirks of CHERI surface is in Rust's const evaluation mechanism.
-This feature allows parts of programs to be run during its compilation, and the results stored for use when the program is actually run.
-The set of operations that are supported is limited: obviously trying to perform IO operations during compilation wouldn't end well, and calculations that might never finish probably aren't a good choice either.
+This feature allows parts of a program to be run during compilation, and the results stored for use when the program is actually run.
+The set of operations that are supported is limited: trying to perform IO operations during compilation wouldn't end well, and calculations that might never finish probably aren't a good choice either.
 The operations available do, however, include some forms of pointer arithmetic.
 
 This snippet for example:
 ```rust
-const POINTER: *const u8 = "test".as_ptr().wrapping_add(3);
+// Get a pointer to the first byte of the string, then use arithmetic to shift
+// the pointer to a later byte.
+// This all happens at compile time.
+const POINTER: *const u8 = "test".as_ptr().wrapping_add(2);
 fn main() {
+	// Check the pointer we got during compilation refers to the right byte of the string.
 	assert_eq!(unsafe { *POINTER }, b's');
 }
 ```
@@ -31,10 +35,9 @@ The solution to this has two parts:
 
 I don't want to get too deep into the second of those, partly because honestly I doubt I fully understand the subtleties, and more importantly, because it isn't super relevant to the interesting CHERI Rust details I want to go over.
 
-The end product of const evaluation are arrays of bytes used to represent most data, combined with an abstract representation of pointers in terms of what they point to.
+The end product of const evaluation consists of arrays of bytes used to represent most data, combined with an abstract representation of pointers in terms of what constant they point to.
 Both of these are handed over to LLVM, which then handles converting them into whatever format the target system wants.
-For pointers, this will be some form of placeholder which encodes where the pointer should point.
-When the program is started, either during an image activation process on a conventional operating system, or during the hardware setup process in an embedded environment, these placeholder descriptions will be replaced with a real address calculated from the encoded information, now that the system knows where everything is for real.
+When the program is started, either during an image activation process on a conventional operating system, or during the hardware setup process in an embedded environment, the data provided by LLVM will be combined with the system's knowledge of where everything is at run time to calculate the real address for each pointer.
 
 It ends up looking something like this example program and the resulting intermediate language the Rust compiler generates and passes to LLVM:
 
@@ -58,7 +61,7 @@ const EXAMPLE0: Example0 = Example0 {
 That leaves the problem of how to represent pointers and every other value inside the compiler during const evaluation.
 Values that don't include pointers are fairly simple: most are stored as arrays of bytes called “allocations” (implemented as `Allocation` in `compiler/rustc_middle/src/mir/interpret/allocation.rs`).
 Because the compiler knows what architecture it's building for, the internal layout of these can match the run time layout exactly, and save needing to do any conversions.
-For the sake of performance, single individual values are handled by just passing them around as integer values, which saves needing to manage lot of small allocations.
+For the sake of performance, loose primitive values not in structs or arrays are handled by just passing them around as integers, which saves needing to manage lots of small allocations.
 
 Here's a simple example of a `struct`, and the way it will be stored during const evaluation:
 
@@ -94,8 +97,8 @@ struct Example2 {
 # Won't Get Fooled Again (by Relocations)
 
 Pointers are trickier.
-The compiler needs enough information that it can do meaningful calculations with them, but it needs to not rely too much on concrete addresses in memory which won't be known until run time.
-Currently, this problem is solved by adding a table of “provenances” (implemented as `Provenance` in `compiler/rustc_middle/src/mir/interpret/pointer.rs`), which maps from ranges of bytes in an allocation to extra information needed to work out which allocation or address a pointer is to.
+The compiler needs enough information that it can do meaningful calculations with them, but it cannot rely on concrete addresses in memory which won't be known until run time.
+Currently, this problem is solved by adding a table of “provenances” (implemented as `Provenance` in `compiler/rustc_middle/src/mir/interpret/pointer.rs`), which maps from ranges of bytes in an allocation to extra information needed to work out which allocation or address a pointer refers to.
 Each pointer then has an entry in this map.
 
 Assuming a 64 bit architecture:
@@ -124,17 +127,17 @@ While that isn't something a running program will have access to, the startup pr
 Just like the normal relocation mechanism, most of this “just happens” from the Rust compiler's point of view.
 Most of the heavy lifting happens inside LLVM and the operating system.
 
-The matter of the extra data in each capability is where things get more complicated for Rust, and const evaluation specifically.
+The matter of the extra data in each capability is where things get more complicated for Rust, and for const evaluation specifically.
 Where on other architectures we just need to keep track of the provenances that describe an eventual address, now we need to decide what to do about all that extra information in the extra 32 bits of the capability.
 
 This is how the pointers on a typical 32 bit architecture look compared to CHERIoT (which also uses 32 bit addresses):
 
 | bytes 0-3          | bytes 4-7           |
 | ------------------ | ------------------- |
-| normal pointer     | (nothing)           |
+| normal pointer     | (not present)       |
 | capability address | capability metadata |
 
-...and this is how that looks to const evaluation for the last example program:
+...and this is how that looks during const evaluation of the last example program:
 
 | bytes 0-7 | bytes 8-11         | bytes 12-15 | bytes 16-23 |
 | --------- | ------------------ | ----------- | ----------- |
@@ -142,7 +145,7 @@ This is how the pointers on a typical 32 bit architecture look compared to CHERI
 
 # The Best of Both Worlds, Part 2
 
-So what's in those extra bits normally?
+So what's in those extra bits of a capability?
 Several things: compressed upper and lower bounds for addresses the capability can access, permission information for read, write, execute, and more, and an object type field used to control how different pieces of code can use the capability.
 
 This leaves us with a few options in const evaluation:
@@ -151,9 +154,9 @@ This leaves us with a few options in const evaluation:
 2. zero the extra bits, and let them be filled in during program startup
 3. mark the extra bits as uninitialised, and let them be filled in during startup
 
-While solution 1 sounds like the ideal approach, accurately implementing CHERI semantics would be a non-trivial project, add a lot of extra complexity to the const evaluation machinery for (currently) only a single architecture, and may or may be useful in practice.
+While solution 1 sounds like the ideal approach, accurately implementing CHERI semantics would be a non-trivial project, add a lot of extra complexity to the const evaluation machinery for (currently) only a single architecture, and may or may not be useful in practice.
 Given that LLVM can already handle calculating the bounds for constant pointers, we don't actually *need* this extra information for things to work correctly.
-That makes solutions 2 and 3 quite attractive at this stage in the project.
+That makes solutions 2 and 3 quite attractive at this stage of the project.
 
 What about solution 2?
 It's simple to implement and unlikely to crash the compiler, which is nice.
@@ -161,7 +164,7 @@ But what happens if a program tries to, say, cast a capability to an array of by
 (I have no idea why you'd do this, but I wouldn't be surprised if *someone* has a reason to!)
 With solution 2, the result would be zeroes, which would be inconsistent with the results of the same operation at run time, breaking the programmer's expectations.
 
-This how we end up at solution 3.
+This is how we end up at solution 3.
 In solution 3, everything in a capability that isn't the address is marked uninitialised during const evaluation, the same way as explicitly uninitialised values and padding.
 The const evaluation machinery in the compiler denies access to uninitialised bytes to prevent unexpected behaviour in these other cases, conveniently making it impossible to read from the empty metadata part of capabilities and get confusing behaviour.
 
