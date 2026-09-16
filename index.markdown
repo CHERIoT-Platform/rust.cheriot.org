@@ -28,6 +28,13 @@ The combination will mean that you can use CHERIoT compartments for supply-chain
 This code is being developed in the [CHERIoT-Platform fork of Rust](https://github.com/CHERIoT-Platform/cheri-rust).
 It uses [CHERIoT LLVM](https://github.com/CHERIoT-Platform/llvm-project), which also includes a set of CHERI and CHERIoT-specific [clang static analyser](https://clang-analyzer.llvm.org) analyses that will evolve in tandem with this to make it easier to check C/C++ code that needs to interoperate with Rust in a CHERIoT firmware image.
 
+## Code
+
+The current **not-yet-complete or stable** preview version is available:
+
+* [as part of the pre-built development container](https://github.com/CHERIoT-Platform/devcontainer/pkgs/container/devcontainer)
+* [as source code](https://github.com/CHERIoT-Platform/cheri-rust)
+
 ## Where to ask questions
 
 We use [GitHub Discussions](https://github.com/orgs/CHERIoT-Platform/discussions) for general queries about CHERIoT.

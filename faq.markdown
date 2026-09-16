@@ -37,9 +37,10 @@ The combination is better than either in isolation.
 
 ## How do I use this?
 
-Don't *yet*.
+Don't *yet*, unless you really want to test the development version!
 The current repository state is under active development.
-We aim to have a preview release near the end of 2025.
+We now have preview releases available as pre-built binaries in the [development container](https://github.com/CHERIoT-Platform/devcontainer/pkgs/container/devcontainer) or as [source code](https://github.com/CHERIoT-Platform/cheri-rust), but many CHERIoT features are not yet supported, and we have much more testing to do before it will approach production-ready.
+End-user documentation is currently also very sparse, you can contact us via GitHub or Signal if you run into any specific issues!
 
 ## Is this version only for CHERIoT
 
